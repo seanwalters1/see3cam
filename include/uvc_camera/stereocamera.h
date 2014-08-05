@@ -10,6 +10,8 @@
 #include "camera_info_manager/camera_info_manager.h"
 #include "image_transport/image_transport.h"
 
+#include <see3cam/cameraParamsConfig.h>
+
 namespace uvc_camera {
 
 class StereoCamera {
@@ -18,6 +20,7 @@ class StereoCamera {
     void onInit();
     void sendInfo(ros::Time time);
     void feedImages();
+    void callback(see3cam::cameraParamsConfig &config, uint32_t level);
     ~StereoCamera();
 
   private:

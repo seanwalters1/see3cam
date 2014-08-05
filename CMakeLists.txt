@@ -1,17 +1,21 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(uvc_camera)
+project(see3cam)
 
-find_package(catkin REQUIRED COMPONENTS camera_info_manager image_transport nodelet roscpp sensor_msgs)
+find_package(catkin REQUIRED COMPONENTS dynamic_reconfigure camera_info_manager image_transport nodelet roscpp sensor_msgs)
 
 find_package(Boost REQUIRED COMPONENTS thread system)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(udev REQUIRED libudev)
 
+generate_dynamic_reconfigure_options(
+  cfg/see3cam.cfg
+)
+
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES nodelet_uvc_camera
-  CATKIN_DEPENDS roscpp nodelet sensor_msgs
+  CATKIN_DEPENDS roscpp dynamic_reconfigure nodelet sensor_msgs
 #  DEPENDS system_lib
 )
 
@@ -20,6 +24,9 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+
+# make sure configure headers are built before any node using them
+#add_dependencies(uvc_camera_node ${PROJECT_NAME}_gencfg)
 
 add_library(xunit
   src/xunit/xunit_lib.c

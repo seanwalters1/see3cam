@@ -12,6 +12,9 @@
 #include <unistd.h>
 #include "uvc_cam/uvc_cam.h"
 
+#include <dynamic_reconfigure/server.h>
+#include <see3cam/cameraParamsConfig.h>
+
 using std::string;
 using namespace uvc_cam;
 
@@ -260,9 +263,8 @@ Cam::Cam(const char *_device, mode_t _mode, int _width, int _height, int _fps)
   {
     // the commented labels correspond to the controls in guvcview and uvcdynctrl
 
-    //set_control(0x009a0901, 0); // exposure, auto (0 = auto, 1 = manual)
-    //set_control(0x00980900, 4); // brightness
-
+    //set_control(0x009a0901, 1); // exposure, auto (0 = auto, 1 = manual)
+    //set_control(0x00980900, 99); // brightness
 
     //set_control(V4L2_CID_EXPOSURE_AUTO_NEW, 2);
     //set_control(10094851, 1); // Exposure, Auto Priority
@@ -282,7 +284,7 @@ Cam::Cam(const char *_device, mode_t _mode, int _width, int _height, int _fps)
     //set_control(9963795, 200); // Gain
     //set_control(9963803, 224); // Sharpness
     //set_control(9963804, 1); //Backlight Compensation
-    //set_control(10094850, 250); // Exposure (Absolute)
+    //set_control(10094850, 10); // Exposure (Absolute)
     //set_control(168062212, 16); //Focus (absolute)
     //set_control(168062213, 3); //LED1 Mode
     //set_control(168062214, 0); //LED1 Frequency
@@ -301,6 +303,11 @@ Cam::Cam(const char *_device, mode_t _mode, int _width, int _height, int _fps)
   printf("jpeg quality: %d\n", v4l2_jpeg.quality);
 */
 
+/*  void callback(see3cam::cameraParamsConfig &config, uint32_t level) {
+    ROS_INFO("Reconfigure Request: %d", config.exposureauto);
+    try{ set_control(0x009a0901,config.exposureauto);}
+    catch{printf("callback failed\n");}
+  }*/
   memset(&request_buffers_, 0, sizeof(request_buffers_));
   request_buffers_.count = NUM_BUFFERS;
   request_buffers_.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -348,8 +355,8 @@ Cam::Cam(const char *_device, mode_t _mode, int _width, int _height, int _fps)
 
 
   // initialize see3cam extension unit
-  InitExtensionUnit( (const char*)capability_.bus_info );
-  EnableTriggerMode();
+  //InitExtensionUnit( (const char*)capability_.bus_info );
+  //EnableTriggerMode();
 }
 
 Cam::~Cam()

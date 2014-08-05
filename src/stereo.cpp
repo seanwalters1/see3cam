@@ -12,6 +12,9 @@
 
 #include "uvc_camera/stereocamera.h"
 
+#include <dynamic_reconfigure/server.h>
+#include <see3cam/cameraParamsConfig.h>
+
 using namespace sensor_msgs;
 
 /* Rotate an 8-bit, 3-channel image by 180 degrees. */
@@ -108,9 +111,65 @@ void StereoCamera::sendInfo(ros::Time time) {
   right_info_pub.publish(info_right);
 }
 
+    void StereoCamera::callback(see3cam::cameraParamsConfig &config, uint32_t level) {
+        ROS_INFO("Reconfigure Request: %d", config.exposureauto);
+        try{cam_left->set_control(0x009a0901,config.exposureauto);}
+        catch(int e){printf("callback failed\n");}
+        try{cam_right->set_control(0x009a0901,config.exposureauto);}
+        catch(int e){printf("callback failed\n");}
+       
+        ROS_INFO("Reconfigure Request: %d", config.exposure);
+        try{cam_left->set_control(0x009a0902,config.exposure);} 
+        catch(int e){printf("callback failed\n");}
+        try{cam_right->set_control(0x009a0902,config.exposure);} 
+        catch(int e){printf("callback failed\n");}
 
+        ROS_INFO("Reconfigure Request: %d", config.brightness);
+        try{cam_left->set_control(0x00980900,config.brightness);}
+        catch(int e){printf("callback failed\n");}
+        try{cam_right->set_control(0x00980900,config.brightness);}
+        catch(int e){printf("callback failed\n");}
+       
+        ROS_INFO("Reconfigure Request: %d", config.contrast);
+        try{cam_left->set_control(0x00980901,config.contrast);} 
+        catch(int e){printf("callback failed\n");}
+        try{cam_right->set_control(0x00980901,config.contrast);} 
+        catch(int e){printf("callback failed\n");}
+
+        ROS_INFO("Reconfigure Request: %d", config.saturation);
+        try{cam_left->set_control(0x00980902,config.saturation);}
+        catch(int e){printf("callback failed\n");}
+        try{cam_right->set_control(0x00980902,config.saturation);}
+        catch(int e){printf("callback failed\n");}
+       
+        ROS_INFO("Reconfigure Request: %d", config.Hue);
+        try{cam_left->set_control(0x00980903,config.Hue);} 
+        catch(int e){printf("callback failed\n");}
+        try{cam_right->set_control(0x00980903,config.Hue);} 
+        catch(int e){printf("callback failed\n");}
+
+        ROS_INFO("Reconfigure Request: %d", config.Gamma);
+        try{cam_left->set_control(0x00980910,config.Gamma);}
+        catch(int e){printf("callback failed\n");}
+        try{cam_right->set_control(0x00980910,config.Gamma);}
+        catch(int e){printf("callback failed\n");}
+       
+        ROS_INFO("Reconfigure Request: %d", config.Gain);
+        try{cam_left->set_control(0x00980913,config.Gain);} 
+        catch(int e){printf("callback failed\n");}
+        try{cam_right->set_control(0x00980913,config.Gain);} 
+        catch(int e){printf("callback failed\n");}
+
+	}
 void StereoCamera::feedImages() {
   unsigned int pair_id = 0;
+  
+  dynamic_reconfigure::Server<see3cam::cameraParamsConfig> server;
+  dynamic_reconfigure::Server<see3cam::cameraParamsConfig>::CallbackType f;
+
+  f = boost::bind(&uvc_camera::StereoCamera::callback, this, _1, _2);
+  server.setCallback(f);
+
   while (ok) {
     unsigned char *frame_left = NULL, *frame_right = NULL;
     uint32_t bytes_used_left, bytes_used_right;

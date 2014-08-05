@@ -13,6 +13,9 @@
 
 #include "uvc_camera/camera.h"
 
+#include <dynamic_reconfigure/server.h>
+#include <see3cam/cameraParamsConfig.h>
+
 using namespace sensor_msgs;
 
 namespace uvc_camera {
@@ -56,15 +59,18 @@ Camera::Camera(ros::NodeHandle _comm_nh, ros::NodeHandle _param_nh) :
       exposure_pub = node.advertise<std_msgs::Float64>("exposure", 1, true);
 
       /* initialize the cameras */
-      cam = new uvc_cam::Cam(device.c_str(), uvc_cam::Cam::MODE_BAYER, width, height, fps);
+      //public:
+      cam = new uvc_cam::Cam(device.c_str(), uvc_cam::Cam::MODE_RGB, width, height, fps);
       //cam->set_motion_thresholds(100, -1);
-      cam->set_control(0x009a0901, 1); // exposure, auto (0 = auto, 1 = manual)
-      cam->set_control(0x00980900, 8); // brightness
-      cam->set_control(0x9a0902, 78); // exposure time 15.6ms
+      //cam->set_control(0x009a0901, 1); // exposure, auto (0 = auto, 1 = manual)
+      //cam->set_control(0x00980900, 8); // brightness
+      //cam->set_control(0x9a0902, 78); // exposure time 15.6ms
       std_msgs::Float64 exposure_msg;
       exposure_msg.data=7.8 * 0.5;
       exposure_pub.publish( exposure_msg );
 
+
+      
       /* and turn on the streamer */
       ok = true;
       image_thread = boost::thread(boost::bind(&Camera::feedImages, this));
@@ -73,7 +79,42 @@ Camera::Camera(ros::NodeHandle _comm_nh, ros::NodeHandle _param_nh) :
       pnode.getParam("time_topic", time_topic);
       time_sub = node.subscribe(time_topic, 1, &Camera::timeCb, this );
     }
+    
+    void Camera::callback(see3cam::cameraParamsConfig &config, uint32_t level) {
+        ROS_INFO("Reconfigure Request: %d", config.exposureauto);
+        try{cam->set_control(0x009a0901,config.exposureauto);}
+        catch(int e){printf("callback failed\n");}
+       
+        ROS_INFO("Reconfigure Request: %d", config.exposure);
+        try{cam->set_control(0x009a0902,config.exposure);} 
+        catch(int e){printf("callback failed\n");}
 
+        ROS_INFO("Reconfigure Request: %d", config.brightness);
+        try{cam->set_control(0x00980900,config.brightness);}
+        catch(int e){printf("callback failed\n");}
+       
+        ROS_INFO("Reconfigure Request: %d", config.contrast);
+        try{cam->set_control(0x00980901,config.contrast);} 
+        catch(int e){printf("callback failed\n");}
+
+        ROS_INFO("Reconfigure Request: %d", config.saturation);
+        try{cam->set_control(0x00980902,config.saturation);}
+        catch(int e){printf("callback failed\n");}
+       
+        ROS_INFO("Reconfigure Request: %d", config.Hue);
+        try{cam->set_control(0x00980903,config.Hue);} 
+        catch(int e){printf("callback failed\n");}
+
+        ROS_INFO("Reconfigure Request: %d", config.Gamma);
+        try{cam->set_control(0x00980910,config.Gamma);}
+        catch(int e){printf("callback failed\n");}
+       
+        ROS_INFO("Reconfigure Request: %d", config.Gain);
+        try{cam->set_control(0x00980913,config.Gain);} 
+        catch(int e){printf("callback failed\n");}
+
+	}
+    
     void Camera::sendInfo(ImagePtr &image, ros::Time time) {
       CameraInfoPtr info(new CameraInfo(info_mgr.getCameraInfo()));
 
@@ -103,9 +144,17 @@ Camera::Camera(ros::NodeHandle _comm_nh, ros::NodeHandle _param_nh) :
     	//ROS_INFO_STREAM("Next timestamp: " << last_time);
       time_mutex_.unlock();
     }
-
+    
+    
+    
     void Camera::feedImages() {
       unsigned int pair_id = 0;
+      dynamic_reconfigure::Server<see3cam::cameraParamsConfig> server;
+      dynamic_reconfigure::Server<see3cam::cameraParamsConfig>::CallbackType f;
+
+      f = boost::bind(&uvc_camera::Camera::callback, this, _1, _2);
+      server.setCallback(f);
+
       while (ok) {
         unsigned char *img_frame = NULL;
         uint32_t bytes_used;
@@ -121,14 +170,16 @@ Camera::Camera(ros::NodeHandle _comm_nh, ros::NodeHandle _param_nh) :
          * (skip_frames + 1)th frame. It's set up this way just because
          * this is based on Stereo...
          */
-        if (skip_frames == 0 || frames_to_skip == 0) {
+        
+
+	if (skip_frames == 0 || frames_to_skip == 0) {
           if (img_frame) {
              ImagePtr image(new Image);
 
              image->height = height;
              image->width = width;
-             image->step = width;
-             image->encoding = image_encodings::BAYER_GRBG8;
+             image->step = 3 * width;
+             image->encoding = image_encodings::RGB8;
 
              image->header.stamp = capture_time;
              image->header.seq = pair_id;
@@ -137,7 +188,7 @@ Camera::Camera(ros::NodeHandle _comm_nh, ros::NodeHandle _param_nh) :
 
              image->data.resize(image->step * image->height);
 
-             memcpy(&image->data[0], img_frame, image->data.size());
+             memcpy(&image->data[0], img_frame, height*width * 3);
 
              pub.publish(image);
 
