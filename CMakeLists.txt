@@ -8,9 +8,7 @@ find_package(Boost REQUIRED COMPONENTS thread system)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(udev REQUIRED libudev)
 
-generate_dynamic_reconfigure_options(
-  cfg/see3cam.cfg
-)
+generate_dynamic_reconfigure_options(cfg/see3cam.cfg)
 
 catkin_package(
   INCLUDE_DIRS include
@@ -24,18 +22,14 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-
-# make sure configure headers are built before any node using them
-#add_dependencies(uvc_camera_node ${PROJECT_NAME}_gencfg)
-
 add_library(xunit
   src/xunit/xunit_lib.c
   src/xunit/xunit_lib_cug.c
 )
 target_link_libraries(xunit ${udev_LIBRARIES})
 
-add_library(nodelet_uvc_camera src/nodelets.cpp src/camera.cpp src/stereo.cpp src/uvc_cam.cpp)
-target_link_libraries(nodelet_uvc_camera ${Boost_LIBRARIES} ${catkin_LIBRARIES} xunit)
+#add_library(nodelet_uvc_camera src/nodelets.cpp src/camera.cpp src/stereo.cpp src/uvc_cam.cpp)
+#target_link_libraries(nodelet_uvc_camera ${Boost_LIBRARIES} ${catkin_LIBRARIES} xunit)
 
 add_executable(uvc_camera_node src/camera_node.cpp src/camera.cpp src/uvc_cam.cpp)
 target_link_libraries(uvc_camera_node ${Boost_LIBRARIES} ${catkin_LIBRARIES} xunit)
@@ -43,6 +37,8 @@ target_link_libraries(uvc_camera_node ${Boost_LIBRARIES} ${catkin_LIBRARIES} xun
 add_executable(uvc_stereo_node src/stereo_node.cpp src/stereo.cpp src/uvc_cam.cpp)
 target_link_libraries(uvc_stereo_node ${Boost_LIBRARIES} ${catkin_LIBRARIES} xunit)
 
+add_dependencies(uvc_camera_node ${PROJECT_NAME}_gencfg)
+add_dependencies(uvc_stereo_node ${PROJECT_NAME}_gencfg)
 #############
 ## Install ##
 #############
@@ -58,7 +54,7 @@ target_link_libraries(uvc_stereo_node ${Boost_LIBRARIES} ${catkin_LIBRARIES} xun
 # )
 
 ## Mark executables and/or libraries for installation
-install(TARGETS nodelet_uvc_camera uvc_camera_node uvc_stereo_node
+install(TARGETS uvc_camera_node uvc_stereo_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

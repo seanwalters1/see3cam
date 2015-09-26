@@ -343,7 +343,7 @@ int find_hid_device(const char* physical_location)
 		{
 			vp_id_match = TRUE;
 		}
-		if(!strncmp(udev_device_get_sysattr_value(pdev,"idVendor"), "2560", 4) && !strncmp(udev_device_get_sysattr_value(pdev, "idProduct"), "c111", 4))
+		if(!strncmp(udev_device_get_sysattr_value(pdev,"idVendor"), "2560", 4) && !strncmp(udev_device_get_sysattr_value(pdev, "idProduct"), "c112", 4))
 		{
 			vp_id_match = TRUE;
 		}
