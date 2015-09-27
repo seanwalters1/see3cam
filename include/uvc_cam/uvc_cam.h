@@ -35,6 +35,8 @@ bool UninitExtensionUnit();
 bool EnableMasterMode();
 
 bool EnableTriggerMode();
+
+bool SetBinnedVGAMode();
 }
 
 namespace uvc_cam

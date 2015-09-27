@@ -46,6 +46,8 @@ BOOL EnableMasterMode();
 
 BOOL EnableTriggerMode();
 
+BOOL SetBinnedVGAMode();
+
 BOOL SetFocusPosition( UINT16 );
 
 BOOL GetFocusPosition( UINT16 *);

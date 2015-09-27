@@ -356,6 +356,7 @@ Cam::Cam(const char *_device, mode_t _mode, int _width, int _height, int _fps)
 
   // initialize see3cam extension unit
   InitExtensionUnit( (const char*)capability_.bus_info );
+  SetBinnedVGAMode();
   EnableTriggerMode();
 }
 
