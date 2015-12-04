@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>see3cam</name>
-  <version>0.2.0</version>
+  <version>0.3.0</version>
   <description>
      A collection of node(let)s that stream images from USB cameras (UVC)
      and provide CameraInfo messages to consumers. Includes a
@@ -32,6 +32,6 @@
   <run_depend>sensor_msgs</run_depend>
 
   <export>
-    <nodelet plugin="${prefix}/nodelet_uvc_camera.xml"/>
+    <nodelet plugin="${prefix}/nodelets.xml"/>
   </export>
 </package>

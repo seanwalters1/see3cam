@@ -1,0 +1,47 @@
+<launch>
+  <node pkg="nodelet" type="nodelet" name="camera_process" args="manager" output="screen"/>
+
+  <node pkg="nodelet" type="nodelet" name="see3cam" args="load see3cam/StereoNodelet /camera_process" output="screen" >
+    <remap from="camera_process" to="stereo_process" />
+    <param name="left/rotate" type="bool" value="true" />
+    <param name="right/rotate" type="bool" value="true" />
+    <param name="width" value="1280" />
+    <param name="height" value="960" />
+    <param name="encoding" value="mono8" />
+    <param name="fps" type="int" value="30" />
+    <param name="frame" type="string" value="wide_stereo" />
+    <param name="left/device" type="string" value="/dev/video1" />
+    <param name="right/device" type="string" value="/dev/video0" />
+    <param name="left/camera_info_url" type="string" value="file://$(find see3cam)/calibration/left.yml" />
+    <param name="right/camera_info_url" type="string" value="file://$(find see3cam)/calibration/right.yml" />
+    <param name="exposureauto" value="1" />
+    <param name="exposure" value="200" />
+    <param name="brightness" value="99" />
+    <param name="contrast" value="43" />
+    <param name="saturation" value="50" />
+    <param name="Hue" value="50" />
+    <param name="Gamma" value="50" />
+    <param name="Gain" value="1" />
+  </node>
+  
+  <node pkg="nodelet" type="nodelet" name="hd_rectify_left" args="load image_proc/rectify /camera_process" output="screen">
+    <remap from="image_mono" to="left/image_raw" />
+    <remap from="camera_info" to="left/camera_info" />
+    <remap from="image_rect" to="left/image_rect" />
+  </node>   
+  
+  <node pkg="nodelet" type="nodelet" name="hd_rectify_right" args="load image_proc/rectify /camera_process" output="screen">
+    <remap from="image_mono" to="right/image_raw" />
+    <remap from="camera_info" to="right/camera_info" />
+    <remap from="image_rect" to="right/image_rect" />
+  </node>   
+  
+  <node pkg="nodelet" type="nodelet" name="hd_stereo" args="load stereo_image_proc/disparity /camera_process" output="screen">
+    <remap from="left/image_rect" to="left/image_rect" />
+    <remap from="left/camera_info" to="left/camera_info" />
+    <remap from="right/image_rect" to="right/image_rect" />
+    <remap from="right/camera_info" to="right/camera_info" />
+    <remap from="disparity" to="hd_disparity" />
+  </node> 
+  
+</launch>

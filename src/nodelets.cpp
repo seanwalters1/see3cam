@@ -4,29 +4,9 @@
 #include <pluginlib/class_list_macros.h>
 #include <nodelet/nodelet.h>
 
-#include "uvc_camera/camera.h"
-#include "uvc_camera/stereocamera.h"
+#include "see3cam/stereocamera.h"
 
-namespace uvc_camera {
-
-class CameraNodelet : public nodelet::Nodelet {
-  public:
-    CameraNodelet() {}
-
-    void onInit() {
-      ros::NodeHandle node = getNodeHandle();
-      ros::NodeHandle pnode = getPrivateNodeHandle();
-
-      camera = new Camera(node, pnode);
-    }
-
-    ~CameraNodelet() {
-      if (camera) delete camera;
-    }
-
-  private:
-    Camera *camera;
-};
+namespace see3cam {
 
 class StereoNodelet : public nodelet::Nodelet {
   public:
@@ -49,6 +29,5 @@ class StereoNodelet : public nodelet::Nodelet {
 
 };
 
-PLUGINLIB_DECLARE_CLASS(uvc_camera, CameraNodelet, uvc_camera::CameraNodelet, nodelet::Nodelet);
-PLUGINLIB_DECLARE_CLASS(uvc_camera, StereoNodelet, uvc_camera::StereoNodelet, nodelet::Nodelet);
+PLUGINLIB_DECLARE_CLASS(see3cam, StereoNodelet, see3cam::StereoNodelet, nodelet::Nodelet);
 

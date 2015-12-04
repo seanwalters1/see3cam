@@ -37,6 +37,8 @@ bool EnableMasterMode();
 bool EnableTriggerMode();
 
 bool SetBinnedVGAMode();
+
+bool SetCroppedVGAMode();
 }
 
 namespace uvc_cam
@@ -66,7 +68,7 @@ static const int exp_vals[]=
 class Cam
 {
 public:
-  enum mode_t { MODE_RGB, MODE_MJPG, MODE_YUYV, MODE_BAYER } mode_;
+  enum mode_t { MODE_RGB, MODE_MJPG, MODE_YUYV, MODE_BAYER, MODE_GRAY } mode_;
   Cam(const char *device, mode_t _mode = MODE_RGB,
       int _width = 640, int _height = 480, int _fps = 30);
   ~Cam();
@@ -74,15 +76,12 @@ public:
   int grab(unsigned char **frame, uint32_t &bytes_used);
   void release(unsigned buf_idx);
   bool set_auto_white_balance(bool on);
-  void set_motion_thresholds(int lum, int count);
   void set_control(uint32_t id, int val);
 private:
 
   std::string device_;
 
   int device_file_h_;
-  int motion_threshold_luminance_;
-  int motion_threshold_count;
 
   unsigned width_, height_, fps_;
   v4l2_format format_;
@@ -95,7 +94,8 @@ private:
   void *buffer_mem_[NUM_BUFFERS];
   unsigned buffer_length_;
   unsigned char *rgb_frame_;
-  unsigned char *last_yuv_frame_;
+  unsigned char *yuyv_frame_;
+  unsigned char *gray_frame_;
 
   /*------------------------- new camera class controls ---------------------*/
   CSU32 V4L2_CTRL_CLASS_USER_NEW = 0x00980000;

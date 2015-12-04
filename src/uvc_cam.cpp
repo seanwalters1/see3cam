@@ -42,12 +42,9 @@ enumerate_menu (int device_file_h_,
 
 
 Cam::Cam(const char *_device, mode_t _mode, int _width, int _height, int _fps)
-: mode_(_mode), device_(_device),
-  motion_threshold_luminance_(100), motion_threshold_count(-1),
-  width_(_width), height_(_height), fps_(_fps), rgb_frame_(NULL)
+: mode_(_mode), device_(_device), width_(_width), height_(_height), fps_(_fps),
+  rgb_frame_(NULL), gray_frame_(NULL), yuyv_frame_(NULL)
 {
-	//enumerate();
-
   printf("opening %s\n", _device);
 
   if ((device_file_h_ = open(_device, O_RDWR)) == -1)
@@ -189,7 +186,7 @@ Cam::Cam(const char *_device, mode_t _mode, int _width, int _height, int _fps)
   format_.fmt.pix.width = width_;
   format_.fmt.pix.height = height_;
 
-  if (mode_ == MODE_RGB || mode_ == MODE_YUYV) // we'll convert later
+  if (mode_ == MODE_RGB || mode_ == MODE_YUYV || mode_ == MODE_GRAY) // we'll convert later
     format_.fmt.pix.pixelformat = 'Y' | ('U' << 8) | ('Y' << 16) | ('V' << 24);
   else if (mode_ == MODE_BAYER)
     format_.fmt.pix.pixelformat = 'B' | ('A' << 8) | ('8' << 16) | ('1' << 24);
@@ -351,13 +348,13 @@ Cam::Cam(const char *_device, mode_t _mode, int _width, int _height, int _fps)
   if (ioctl(device_file_h_, VIDIOC_STREAMON, &type) < 0)
     throw std::runtime_error("unable to start capture");
   rgb_frame_ = new unsigned char[width_ * height_ * 3];
-  last_yuv_frame_ = new unsigned char[width_ * height_ * 2];
-
+  yuyv_frame_ = new unsigned char[width_ * height_ * 2];
+  gray_frame_ = new unsigned char[width_ * height_ * 1];
 
   // initialize see3cam extension unit
   InitExtensionUnit( (const char*)capability_.bus_info );
-  SetBinnedVGAMode();
   EnableTriggerMode();
+  SetBinnedVGAMode();
 }
 
 Cam::~Cam()
@@ -373,9 +370,10 @@ Cam::~Cam()
   if (rgb_frame_)
   {
     delete[] rgb_frame_;
-    delete[] last_yuv_frame_;
+    delete[] yuyv_frame_;
+    delete[] gray_frame_;
   }
-  last_yuv_frame_ = rgb_frame_ = NULL;
+  rgb_frame_ = gray_frame_ = yuyv_frame_ = NULL;
 
   UninitExtensionUnit();
 }
@@ -508,11 +506,10 @@ int Cam::grab(unsigned char **frame, uint32_t &bytes_used)
   bytes_used = buffer_.bytesused;
   if (mode_ == MODE_RGB)
   {
-    int num_pixels_different = 0; // just look at the Y channel
     unsigned char *pyuv = (unsigned char *)buffer_mem_[buffer_.index];
-    // yuyv is 2 bytes per pixel. step through every pixel pair.
     unsigned char *prgb = rgb_frame_;
-    unsigned char *pyuv_last = last_yuv_frame_;
+
+    // yuyv is 2 bytes per pixel. step through every pixel pair
     for (unsigned i = 0; i < width_ * height_ * 2; i += 4)
     {
       *prgb++ = sat(pyuv[i]+1.402f  *(pyuv[i+3]-128));
@@ -521,40 +518,38 @@ int Cam::grab(unsigned char **frame, uint32_t &bytes_used)
       *prgb++ = sat(pyuv[i+2]+1.402f*(pyuv[i+3]-128));
       *prgb++ = sat(pyuv[i+2]-0.34414f*(pyuv[i+1]-128)-0.71414f*(pyuv[i+3]-128));
       *prgb++ = sat(pyuv[i+2]+1.772f*(pyuv[i+1]-128));
-      if ((int)pyuv[i] - (int)pyuv_last[i] > motion_threshold_luminance_ ||
-          (int)pyuv_last[i] - (int)pyuv[i] > motion_threshold_luminance_)
-        num_pixels_different++;
-      if ((int)pyuv[i+2] - (int)pyuv_last[i+2] > motion_threshold_luminance_ ||
-          (int)pyuv_last[i+2] - (int)pyuv[i+2] > motion_threshold_luminance_)
-        num_pixels_different++;
-
-      // this gives bgr images...
-      /*
-      *prgb++ = sat(pyuv[i]+1.772f  *(pyuv[i+1]-128));
-      *prgb++ = sat(pyuv[i]-0.34414f*(pyuv[i+1]-128)-0.71414f*(pyuv[i+3]-128));
-      *prgb++ = sat(pyuv[i]+1.402f  *(pyuv[i+3]-128));
-      *prgb++ = sat(pyuv[i+2]+1.772f*(pyuv[i+1]-128));
-      *prgb++ = sat(pyuv[i+2]-0.34414f*(pyuv[i+1]-128)-0.71414f*(pyuv[i+3]-128));
-      *prgb++ = sat(pyuv[i+2]+1.402f*(pyuv[i+3]-128));
-      */
     }
-    memcpy(last_yuv_frame_, pyuv, width_ * height_ * 2);
-    if (num_pixels_different > motion_threshold_count) // default: always true
-      *frame = rgb_frame_;
-    else
-    {
-      *frame = NULL; // not enough luminance change
-      release(buffer_.index); // let go of this image
-    }
+    *frame = rgb_frame_;
   }
   else if (mode_ == MODE_YUYV)
   {
-    *frame = (uint8_t *)buffer_mem_[buffer_.index];
+    unsigned char *pyuv = (unsigned char *)buffer_mem_[buffer_.index]; // UYVY format for ROS
+    unsigned char *puyv = yuyv_frame_;
+
+    // yuyv is 2 bytes per pixel. step through every pixel pair
+    for (unsigned i = 0; i < width_ * height_ * 2; i += 4)
+    {
+      *puyv++ = pyuv[i+1];
+      *puyv++ = pyuv[i];
+      *puyv++ = pyuv[i+3];
+      *puyv++ = pyuv[i+2];
+    }
+    *frame = yuyv_frame_;
+  }
+  else if (mode_ == MODE_GRAY)
+  {
+    unsigned char *pyuv = (unsigned char *)buffer_mem_[buffer_.index];
+    unsigned char *pgray = gray_frame_;
+
+    for (unsigned i = 0; i < width_ * height_ * 2; i += 2) {
+      *pgray++ = pyuv[i];
+    }
+    *frame = gray_frame_;
   }
   else // mode == MODE_JPEG
   {
-    //if (bytes_used > 100)
-      *frame = (unsigned char *)buffer_mem_[buffer_.index];
+
+    *frame = (unsigned char *)buffer_mem_[buffer_.index];
   }
   return buffer_.index;
 }
@@ -562,8 +557,8 @@ int Cam::grab(unsigned char **frame, uint32_t &bytes_used)
 void Cam::release(unsigned buf_idx)
 {
   if (buf_idx < NUM_BUFFERS)
-    if (ioctl(device_file_h_, VIDIOC_QBUF, &buffer_) < 0)
-      throw std::runtime_error("couldn't requeue buffer");
+    if (ioctl(device_file_h_, VIDIOC_QBUF, &buffer_) < 0);
+      //throw std::runtime_error("couldn't requeue buffer"); // error was being thrown after relaunch due to no frames being received. Trialling discarding error.
 }
 
 int xioctl(int fd, int IOCTL_X, void *arg)
@@ -620,9 +615,4 @@ void Cam::set_control(uint32_t id, int val)
   }
 }
 
-void Cam::set_motion_thresholds(int lum, int count)
-{
-  motion_threshold_luminance_ = lum;
-  motion_threshold_count = count;
-}
 

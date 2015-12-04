@@ -131,6 +131,96 @@ BOOL EnableBinnedVGAMode(UINT8 *VGAStatus)
 }
 
 
+/*
+  **********************************************************************************************************
+ *  MODULE TYPE	:	LIBRAY API 									    *
+ *  Name	:	EnableCroppedVGAMode								    *
+ *  Parameter1	:	UINT8 * ( Cropped VGA status )							    *
+ *  Parameter2	:											    *
+ *  Returns	:	BOOL (TRUE or FALSE)								    *
+ *  Description	:       sends the extension unit command to enable camera cropped VGA mode		    *	
+  **********************************************************************************************************
+*/
+
+BOOL EnableCroppedVGAMode(UINT8 *VGAStatus)
+{
+	BOOL timeout = TRUE;
+	int ret =0;
+	unsigned int start, end = 0;
+
+	//Initialize the buffer
+	memset(g_out_packet_buf, 0x00, sizeof(g_out_packet_buf));
+
+	//Set the Report Number
+	g_out_packet_buf[1] = ENABLE_CROPPED_VGA_MODE; /* Report Number */
+
+	ret = write(hid_fd, g_out_packet_buf, BUFFER_LENGTH);
+	if (ret < 0) {
+		perror("write");
+		return FALSE;
+	} else {
+		printf("%s(): write() wrote %d bytes\n", __func__, ret);
+	}
+	start = GetTickCount();
+	while(timeout) 
+	{	
+		/* Get a report from the device */
+		ret = read(hid_fd, g_in_packet_buf, BUFFER_LENGTH);
+		if (ret < 0) {
+			//perror("read");
+		} else {
+			printf("%s(): read %d bytes:\n", __func__,ret);
+			if(g_in_packet_buf[0] == ENABLE_CROPPED_VGA_MODE) {
+				*VGAStatus = g_in_packet_buf[1];
+				timeout = FALSE;
+			}
+	 	}
+		end = GetTickCount();
+		if(end - start > TIMEOUT)
+		{
+			printf("%s(): Timeout occurred\n", __func__);
+			timeout = FALSE;
+			return FALSE;
+		}		
+	}
+
+	return TRUE;
+}
+
+BOOL SetCroppedVGAMode()
+{
+	BOOL ret = FALSE;
+	UINT8 cropped_vga_status = 0;
+	ret = EnableCroppedVGAMode(&cropped_vga_status);
+	if(ret == FALSE)
+	{
+		printf("Unable to switch to cropped VGA Mode\n");
+		return;
+	}
+	else
+	{
+		switch(cropped_vga_status)
+		{
+			case 1 : 
+				printf("Cropped VGA mode set successfully\n");
+				break;
+			case 2 :
+				printf("The current resolution is not 640x480, please switch to 640x480 before using the Cropping and Binning modes\n");
+				break;
+			case 3 :
+				printf("Device is already in Cropped VGA mode\n");
+				break;
+			case 4 :
+				printf("Failed to set Cropped VGA mode\n");
+				break;
+			default :
+				printf("Failed to set Cropped VGA mode - unknown basis\n ");
+				
+		}
+	}
+	return ret;
+}
+
 BOOL SetBinnedVGAMode()
 {
 	BOOL ret = FALSE;

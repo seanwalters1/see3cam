@@ -12,7 +12,7 @@
 
 #include <see3cam/cameraParamsConfig.h>
 
-namespace uvc_camera {
+namespace see3cam {
 
 class StereoCamera {
   public:
@@ -29,8 +29,9 @@ class StereoCamera {
     bool ok;
 
     uvc_cam::Cam *cam_left, *cam_right;
-    int width, height, fps, skip_frames, frames_to_skip;
-    std::string left_device, right_device, frame;
+    uvc_cam::Cam::mode_t mode;
+    int width, height, fps;
+    std::string left_device, right_device, frame, encoding;
     bool rotate_left, rotate_right;
 
     camera_info_manager::CameraInfoManager left_info_mgr, right_info_mgr;

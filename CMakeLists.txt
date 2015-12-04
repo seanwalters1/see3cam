@@ -12,7 +12,7 @@ generate_dynamic_reconfigure_options(cfg/see3cam.cfg)
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES nodelet_uvc_camera
+  LIBRARIES nodelet_see3cam
   CATKIN_DEPENDS roscpp dynamic_reconfigure nodelet sensor_msgs
 #  DEPENDS system_lib
 )
@@ -28,66 +28,25 @@ add_library(xunit
 )
 target_link_libraries(xunit ${udev_LIBRARIES})
 
-#add_library(nodelet_uvc_camera src/nodelets.cpp src/camera.cpp src/stereo.cpp src/uvc_cam.cpp)
-#target_link_libraries(nodelet_uvc_camera ${Boost_LIBRARIES} ${catkin_LIBRARIES} xunit)
+add_library(see3cam_nodelet src/nodelets.cpp src/stereo.cpp src/uvc_cam.cpp)
+target_link_libraries(see3cam_nodelet ${Boost_LIBRARIES} ${catkin_LIBRARIES} xunit)
 
-add_executable(uvc_camera_node src/camera_node.cpp src/camera.cpp src/uvc_cam.cpp)
-target_link_libraries(uvc_camera_node ${Boost_LIBRARIES} ${catkin_LIBRARIES} xunit)
+add_executable(see3cam_stereo_node src/stereo_node.cpp src/stereo.cpp src/uvc_cam.cpp)
+target_link_libraries(see3cam_stereo_node ${Boost_LIBRARIES} ${catkin_LIBRARIES} xunit)
 
-add_executable(uvc_stereo_node src/stereo_node.cpp src/stereo.cpp src/uvc_cam.cpp)
-target_link_libraries(uvc_stereo_node ${Boost_LIBRARIES} ${catkin_LIBRARIES} xunit)
-
-add_dependencies(uvc_camera_node ${PROJECT_NAME}_gencfg)
-add_dependencies(uvc_stereo_node ${PROJECT_NAME}_gencfg)
+add_dependencies(see3cam_stereo_node ${PROJECT_NAME}_gencfg)
 #############
 ## Install ##
 #############
 
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
-
-## Mark executable scripts (Python etc.) for installation
-## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
 ## Mark executables and/or libraries for installation
-install(TARGETS uvc_camera_node uvc_stereo_node
+install(TARGETS see3cam_stereo_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 install(FILES
-  nodelet_uvc_camera.xml
+  nodelets.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
-
-## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
-
-## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
-
-#############
-## Testing ##
-#############
-
-## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_uvc_camera.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
-
-## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)

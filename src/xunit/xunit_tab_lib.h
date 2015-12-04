@@ -48,6 +48,8 @@ BOOL EnableTriggerMode();
 
 BOOL SetBinnedVGAMode();
 
+BOOL SetCroppedVGAMode();
+
 BOOL SetFocusPosition( UINT16 );
 
 BOOL GetFocusPosition( UINT16 *);

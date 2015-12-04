@@ -1,12 +1,12 @@
 #include <ros/ros.h>
 #include <nodelet/loader.h>
 
-#include "uvc_camera/stereocamera.h"
+#include "see3cam/stereocamera.h"
 
 int main (int argc, char **argv) {
-  ros::init(argc, argv, "uvc_camera_stereo");
+  ros::init(argc, argv, "see3cam_stereo");
 
-  uvc_camera::StereoCamera stereo(ros::NodeHandle(), ros::NodeHandle("~"));
+  see3cam::StereoCamera stereo(ros::NodeHandle(), ros::NodeHandle("~"));
 
   ros::spin();
   return 0;

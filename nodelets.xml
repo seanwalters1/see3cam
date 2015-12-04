@@ -1,0 +1,7 @@
+<library path="lib/libsee3cam_nodelet">
+  <class name="see3cam/StereoNodelet" type="see3cam::StereoNodelet" base_class_type="nodelet::Nodelet">
+    <description>
+      A node that controls and publishes two roughly-synchronized UVC cameras.
+    </description>
+  </class>
+</library>
